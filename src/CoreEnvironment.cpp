@@ -117,6 +117,7 @@ bool RetroHost::core_environment( unsigned command, void *data )
                 variables++;
             }
         }
+        break;
 
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
         {
@@ -244,6 +245,7 @@ bool RetroHost::core_environment( unsigned command, void *data )
                 godot::UtilityFunctions::print("[RetroHost] Core does not support no game");
             }
         }
+        break;
 
         case RETRO_ENVIRONMENT_GET_THROTTLE_STATE: {
             // retro_throttle_state

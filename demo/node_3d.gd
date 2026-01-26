@@ -2,13 +2,9 @@ extends Node3D
 
 @onready var tex_rect = get_node("TextureRect")
 func _ready():
-	# Loads the core, the argument is the dll name inside the libretro-cores folder. WITHOUT THE .DLL
 	RetroHost.load_core("dosbox_pure_libretro")
 
-	#RetroHost.load_core("vice_x64sc_libretro")
-
-
-func _process(delta):
+func _process(_delta):
 	# Run one iteration of the core
 	RetroHost.run()
 

@@ -143,9 +143,9 @@ private:
     struct
     {
 #ifdef _WIN32
-        HINSTANCE handle;
+        HINSTANCE handle = NULL;
 #else
-        void *handle;
+        void *handle = nullptr;
 #endif
         bool initialized = false;
 

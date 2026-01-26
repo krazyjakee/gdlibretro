@@ -187,6 +187,44 @@ src_files = [
     'src/VFS.cpp',
 ]
 
+# yaml-cpp source files (compiled directly into shared library)
+yaml_cpp_files = [
+    'yaml-cpp/src/binary.cpp',
+    'yaml-cpp/src/convert.cpp',
+    'yaml-cpp/src/depthguard.cpp',
+    'yaml-cpp/src/directives.cpp',
+    'yaml-cpp/src/emit.cpp',
+    'yaml-cpp/src/emitfromevents.cpp',
+    'yaml-cpp/src/emitter.cpp',
+    'yaml-cpp/src/emitterstate.cpp',
+    'yaml-cpp/src/emitterutils.cpp',
+    'yaml-cpp/src/exceptions.cpp',
+    'yaml-cpp/src/exp.cpp',
+    'yaml-cpp/src/fptostring.cpp',
+    'yaml-cpp/src/memory.cpp',
+    'yaml-cpp/src/node.cpp',
+    'yaml-cpp/src/node_data.cpp',
+    'yaml-cpp/src/nodebuilder.cpp',
+    'yaml-cpp/src/nodeevents.cpp',
+    'yaml-cpp/src/null.cpp',
+    'yaml-cpp/src/ostream_wrapper.cpp',
+    'yaml-cpp/src/parse.cpp',
+    'yaml-cpp/src/parser.cpp',
+    'yaml-cpp/src/regex_yaml.cpp',
+    'yaml-cpp/src/scanner.cpp',
+    'yaml-cpp/src/scanscalar.cpp',
+    'yaml-cpp/src/scantag.cpp',
+    'yaml-cpp/src/scantoken.cpp',
+    'yaml-cpp/src/simplekey.cpp',
+    'yaml-cpp/src/singledocparser.cpp',
+    'yaml-cpp/src/stream.cpp',
+    'yaml-cpp/src/tag.cpp',
+    'yaml-cpp/src/contrib/graphbuilder.cpp',
+    'yaml-cpp/src/contrib/graphbuilderadapter.cpp',
+]
+
+src_files += yaml_cpp_files
+
 # Determine output directory based on platform
 if platform == 'windows':
     output_dir = f'demo/bin/{PROJECT_NAME}/lib/Windows-AMD64'
