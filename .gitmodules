@@ -1,9 +1,9 @@
-[submodule "extern/godot-cpp"]
-	path = extern/godot-cpp
+[submodule "godot-cpp"]
+	path = godot-cpp
 	url = https://github.com/godotengine/godot-cpp.git
-[submodule "extern/yaml-cpp"]
-	path = extern/yaml-cpp
+[submodule "yaml-cpp"]
+	path = yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "extern/libretro-common"]
-	path = extern/libretro-common
+[submodule "libretro-common"]
+	path = libretro-common
 	url = https://github.com/libretro/libretro-common.git

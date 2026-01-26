@@ -15,7 +15,10 @@ if ( CLANG_FORMAT_PROGRAM )
     get_target_property( CLANG_FORMAT_SOURCES ${PROJECT_NAME} SOURCES )
 
     # Remove some files from the list
-    list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/extern/.*" )
+    list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/godot-cpp/.*" )
+    list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/libretro/.*" )
+    list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/libretro-common/.*" )
+    list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/yaml-cpp/.*" )
     list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/gen/.*" )
     list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/*.gdextension.in" )
     list( FILTER CLANG_FORMAT_SOURCES EXCLUDE REGEX ".*/Version.h.in" )
