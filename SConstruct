@@ -140,9 +140,13 @@ else:
 
 env.Append(LIBS=[File(os.path.join('godot-cpp', 'bin', godot_cpp_lib))])
 
-# Build or use pre-built godot-cpp
-print("Building godot-cpp...")
-godot_cpp_env = SConscript("godot-cpp/SConstruct")
+# Build godot-cpp only if pre-built library is missing
+godot_cpp_lib_path = os.path.join('godot-cpp', 'bin', godot_cpp_lib)
+if os.path.exists(godot_cpp_lib_path):
+    print(f"Using pre-built godot-cpp: {godot_cpp_lib_path}")
+else:
+    print("Building godot-cpp (pre-built library not found)...")
+    SConscript("godot-cpp/SConstruct")
 
 # Platform-specific system libraries
 if is_windows:

@@ -84,21 +84,41 @@ check_godotcpp_cache() {
     return 0
 }
 
-# Function to build godot-cpp
+# Function to download and set up prebuilt godot-cpp
 build_godotcpp() {
-    echo -e "${YELLOW}Building godot-cpp...${NC}"
+    echo -e "${YELLOW}Downloading prebuilt godot-cpp (cache miss)...${NC}"
 
-    cd godot-cpp
+    local godot_version="4.5-stable"
+    local download_url="https://github.com/NodotProject/godot-cpp-builds/releases/download/godot-${godot_version}/godot-cpp-prebuilt-godot-${godot_version}.zip"
+    local cache_dir=".cache"
+    local zip_file="${cache_dir}/godot-cpp-prebuilt-godot-${godot_version}.zip"
 
-    echo -e "${BLUE}Building template_release...${NC}"
-    scons $SCONS_FLAGS generate_bindings=yes target=template_release
+    mkdir -p "${cache_dir}"
 
-    echo -e "${BLUE}Building template_debug...${NC}"
-    scons $SCONS_FLAGS generate_bindings=yes target=template_debug
+    if [ ! -f "${zip_file}" ]; then
+        echo -e "${BLUE}Downloading from: ${download_url}${NC}"
+        if ! curl -L --fail "${download_url}" -o "${zip_file}"; then
+            echo -e "${RED}Failed to download godot-cpp builds.${NC}"
+            rm -f "${zip_file}"
+            exit 1
+        fi
+    else
+        echo -e "${GREEN}Found cached godot-cpp archive.${NC}"
+    fi
 
-    cd ..
+    echo -e "${BLUE}Unzipping from ${zip_file}...${NC}"
+    local temp_unzip_dir=$(mktemp -d)
+    unzip -oq "${zip_file}" -d "${temp_unzip_dir}"
 
-    echo -e "${GREEN}godot-cpp build completed!${NC}"
+    if [ -d "${temp_unzip_dir}/godot-cpp-prebuilt" ]; then
+        cp -r "${temp_unzip_dir}/godot-cpp-prebuilt/"* godot-cpp/
+    else
+        cp -r "${temp_unzip_dir}/"* godot-cpp/
+    fi
+
+    rm -rf "${temp_unzip_dir}"
+
+    echo -e "${GREEN}godot-cpp setup completed!${NC}"
 }
 
 # Function to install dependencies

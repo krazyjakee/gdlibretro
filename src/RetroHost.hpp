@@ -1,7 +1,11 @@
 #pragma once
 
-#include "Windows.h"
-#include "filesystem"
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
+#include <filesystem>
 #include "godot_cpp/classes/image.hpp"
 #include "godot_cpp/classes/input_event.hpp"
 #include "godot_cpp/classes/object.hpp"
@@ -42,7 +46,7 @@ private:
 
     void load_core_variables();
     void save_core_variables();
-    bool RetroHost::get_variable( retro_variable *variable );
+    bool get_variable( retro_variable *variable );
 
     bool core_environment( unsigned cmd, void *data );
 
@@ -138,7 +142,11 @@ private:
 
     struct
     {
+#ifdef _WIN32
         HINSTANCE handle;
+#else
+        void *handle;
+#endif
         bool initialized = false;
 
         void ( *retro_init )( void );

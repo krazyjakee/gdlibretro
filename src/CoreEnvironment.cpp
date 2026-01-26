@@ -1,5 +1,6 @@
 #include "RetroHost.hpp"
 #include "godot_cpp/variant/utility_functions.hpp"
+#include <cstdarg>
 
 void core_log( enum retro_log_level level, const char *fmt, ... )
 {
