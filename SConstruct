@@ -64,6 +64,10 @@ env.Append(CPPPATH=[
     'yaml-cpp/include',
 ])
 
+# yaml-cpp is compiled directly into our shared library, not as a separate DLL,
+# so disable dllimport/dllexport decorations
+env.Append(CPPDEFINES=['YAML_CPP_STATIC_DEFINE'])
+
 # Platform-specific include paths - only add system paths for native builds
 if not use_mingw and platform != 'windows':
     # Only add Linux/macOS system paths for native builds
