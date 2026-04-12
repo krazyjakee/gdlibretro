@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.5"
   SCONS_CACHE_LIMIT: 7168
 
 jobs:
@@ -28,11 +28,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup GDExtension Build Environment
-        uses: NodotProject/godot-cpp-builds@v1
-        with:
-          godot-version: '4.3-stable'
-          godot-cpp-path: './godot-cpp'
+      - name: Download prebuilt godot-cpp
+        run: |
+          GODOT_VERSION="4.5-stable"
+          DOWNLOAD_URL="https://github.com/NodotProject/godot-cpp-builds/releases/download/godot-${GODOT_VERSION}/godot-cpp-prebuilt-godot-${GODOT_VERSION}.zip"
+          curl -L --fail "${DOWNLOAD_URL}" -o godot-cpp-prebuilt.zip
+          TEMP_DIR=$(mktemp -d)
+          unzip -oq godot-cpp-prebuilt.zip -d "${TEMP_DIR}"
+          if [ -d "${TEMP_DIR}/godot-cpp-prebuilt" ]; then
+            cp -r "${TEMP_DIR}/godot-cpp-prebuilt/"* godot-cpp/
+          else
+            cp -r "${TEMP_DIR}/"* godot-cpp/
+          fi
+          rm -rf "${TEMP_DIR}" godot-cpp-prebuilt.zip
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -77,12 +85,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup GDExtension Build Environment
-        uses: NodotProject/godot-cpp-builds@v1
-        with:
-          godot-version: '4.3-stable'
-          godot-cpp-path: './godot-cpp'
-          platform: 'windows'
+      - name: Download prebuilt godot-cpp
+        run: |
+          GODOT_VERSION="4.5-stable"
+          DOWNLOAD_URL="https://github.com/NodotProject/godot-cpp-builds/releases/download/godot-${GODOT_VERSION}/godot-cpp-prebuilt-godot-${GODOT_VERSION}.zip"
+          curl -L --fail "${DOWNLOAD_URL}" -o godot-cpp-prebuilt.zip
+          TEMP_DIR=$(mktemp -d)
+          unzip -oq godot-cpp-prebuilt.zip -d "${TEMP_DIR}"
+          if [ -d "${TEMP_DIR}/godot-cpp-prebuilt" ]; then
+            cp -r "${TEMP_DIR}/godot-cpp-prebuilt/"* godot-cpp/
+          else
+            cp -r "${TEMP_DIR}/"* godot-cpp/
+          fi
+          rm -rf "${TEMP_DIR}" godot-cpp-prebuilt.zip
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -127,11 +142,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup GDExtension Build Environment
-        uses: NodotProject/godot-cpp-builds@v1
-        with:
-          godot-version: '4.3-stable'
-          godot-cpp-path: './godot-cpp'
+      - name: Download prebuilt godot-cpp
+        run: |
+          GODOT_VERSION="4.5-stable"
+          DOWNLOAD_URL="https://github.com/NodotProject/godot-cpp-builds/releases/download/godot-${GODOT_VERSION}/godot-cpp-prebuilt-godot-${GODOT_VERSION}.zip"
+          curl -L --fail "${DOWNLOAD_URL}" -o godot-cpp-prebuilt.zip
+          TEMP_DIR=$(mktemp -d)
+          unzip -oq godot-cpp-prebuilt.zip -d "${TEMP_DIR}"
+          if [ -d "${TEMP_DIR}/godot-cpp-prebuilt" ]; then
+            cp -r "${TEMP_DIR}/godot-cpp-prebuilt/"* godot-cpp/
+          else
+            cp -r "${TEMP_DIR}/"* godot-cpp/
+          fi
+          rm -rf "${TEMP_DIR}" godot-cpp-prebuilt.zip
 
       - name: Set up Python
         uses: actions/setup-python@v5
