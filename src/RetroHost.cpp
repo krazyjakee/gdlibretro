@@ -7,10 +7,10 @@
 #include <fstream>
 #include <iostream>
 
-// https://stackoverflow.com/questions/1387064/how-to-get-the-error-message-from-the-error-code-returned-by-getlasterror
-// Returns the last Win32 error, in string format. Returns an empty string if there is no error.
+// Platform-specific error handling for dynamic library loading
 std::string GetLastErrorAsStr()
 {
+#ifdef _WIN32
     // Get the error message ID, if any.
     DWORD errorMessageID = ::GetLastError();
     if ( errorMessageID == 0 )
@@ -21,20 +21,19 @@ std::string GetLastErrorAsStr()
     LPSTR messageBuffer = nullptr;
 
     // Ask Win32 to give us the string version of that message ID.
-    // The parameters we pass in, tell Win32 to create the buffer that holds the message for us
-    // (because we don't yet know how long the message string will be).
     size_t size = FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
                                       FORMAT_MESSAGE_IGNORE_INSERTS,
                                   NULL, errorMessageID, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
                                   (LPSTR)&messageBuffer, 0, NULL );
 
-    // Copy the error message into a std::string.
     std::string message( messageBuffer, size );
-
-    // Free the Win32's string's buffer.
     LocalFree( messageBuffer );
 
     return message;
+#else
+    const char *error = dlerror();
+    return error ? std::string( error ) : std::string();
+#endif
 }
 
 RetroHost::RetroHost()
@@ -57,9 +56,16 @@ RetroHost *RetroHost::get_singleton()
     return singleton;
 }
 
+// Platform-specific symbol loading
+#ifdef _WIN32
+#define GET_PROC_ADDRESS( handle, sym ) GetProcAddress( handle, sym )
+#else
+#define GET_PROC_ADDRESS( handle, sym ) dlsym( handle, sym )
+#endif
+
 #define load_symbol_return_false_on_err( handle, dest, sym )                                       \
     godot::UtilityFunctions::print( "[RetroHost] Loading core symbol \"", #sym, "\"" );            \
-    dest = (decltype( dest ))GetProcAddress( handle, #sym );                                       \
+    dest = (decltype( dest ))GET_PROC_ADDRESS( handle, #sym );                                     \
     if ( dest == NULL )                                                                            \
     {                                                                                              \
         godot::UtilityFunctions::printerr( "[RetroHost] Could not load symbol \"", #sym,           \
@@ -69,7 +75,7 @@ RetroHost *RetroHost::get_singleton()
 
 #define def_and_load_fn_symbol_return_false_on_err( handle, dest, sym )                            \
     godot::UtilityFunctions::print( "[RetroHost] Loading core symbol \"", #sym, "\"" );            \
-    decltype( sym ) *dest = reinterpret_cast<decltype( sym ) *>( GetProcAddress( handle, #sym ) ); \
+    decltype( sym ) *dest = reinterpret_cast<decltype( sym ) *>( GET_PROC_ADDRESS( handle, #sym ) ); \
     if ( dest == nullptr )                                                                         \
     {                                                                                              \
         godot::UtilityFunctions::printerr( "[RetroHost] Could not load symbol \"", #sym,           \
@@ -82,7 +88,16 @@ bool RetroHost::load_core( godot::String name )
     this->unload_core();
     godot::UtilityFunctions::print( "[RetroHost] Loading core \"", name, "\"" );
 
-    godot::String dll_path;
+    godot::String lib_path;
+
+    // Platform-specific library extension
+#ifdef _WIN32
+    const char *lib_ext = ".dll";
+#elif defined( __APPLE__ )
+    const char *lib_ext = ".dylib";
+#else
+    const char *lib_ext = ".so";
+#endif
 
     if ( godot::OS::get_singleton()->has_feature( "editor" ) )
     {
@@ -91,21 +106,24 @@ bool RetroHost::load_core( godot::String name )
         // to load the cores from the project directory
         this->cwd =
             godot::ProjectSettings::get_singleton()->globalize_path( "res://" ) + "libretro-cores/";
-        dll_path = cwd + name + ".dll";
+        lib_path = cwd + name + lib_ext;
     }
     else
     {
-        // Windows can handle loading libraries by name alone if we're in a exported build, so we
-        // don't need to do anything special here
+        // OS can handle loading libraries by name alone if we're in an exported build
         this->cwd = godot::OS::get_singleton()->get_executable_path().get_base_dir();
-        dll_path = name;
+        lib_path = name;
     }
 
-    this->core.handle = LoadLibrary( dll_path.utf8().get_data() );
+#ifdef _WIN32
+    this->core.handle = LoadLibrary( lib_path.utf8().get_data() );
+#else
+    this->core.handle = dlopen( lib_path.utf8().get_data(), RTLD_LAZY );
+#endif
 
     if ( this->core.handle == NULL )
     {
-        godot::UtilityFunctions::print( "[RetroHost] Failed to load core \"", dll_path, "\"" );
+        godot::UtilityFunctions::print( "[RetroHost] Failed to load core \"", lib_path, "\"" );
         return false;
     }
 
@@ -204,7 +222,11 @@ void RetroHost::unload_core()
     if ( this->core.handle != NULL )
     {
         godot::UtilityFunctions::print( "[RetroHost] Freeing core library" );
+#ifdef _WIN32
         FreeLibrary( this->core.handle );
+#else
+        dlclose( this->core.handle );
+#endif
         this->core.handle = NULL;
     }
 }

@@ -6,3 +6,7 @@ compatibility_minimum = 4.1
 [libraries]
 windows.release.x86_64 = "lib/Windows-AMD64/LibRetroHost-d.dll"
 windows.debug.x86_64 = "lib/Windows-AMD64/LibRetroHost-d.dll"
+linux.release.x86_64 = "lib/Linux-x86_64/libLibRetroHost.so"
+linux.debug.x86_64 = "lib/Linux-x86_64/libLibRetroHost.so"
+macos.release = "lib/Darwin-Universal/libLibRetroHost.dylib"
+macos.debug = "lib/Darwin-Universal/libLibRetroHost.dylib"

@@ -1,0 +1,70 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.5"
+  SCONS_CACHE_LIMIT: 7168
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build Linux (x86_64)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download prebuilt godot-cpp
+        run: |
+          GODOT_VERSION="4.5-stable"
+          DOWNLOAD_URL="https://github.com/NodotProject/godot-cpp-builds/releases/download/godot-${GODOT_VERSION}/godot-cpp-prebuilt-godot-${GODOT_VERSION}.zip"
+          curl -L --fail "${DOWNLOAD_URL}" -o godot-cpp-prebuilt.zip
+          TEMP_DIR=$(mktemp -d)
+          unzip -oq godot-cpp-prebuilt.zip -d "${TEMP_DIR}"
+          if [ -d "${TEMP_DIR}/godot-cpp-prebuilt" ]; then
+            cp -r "${TEMP_DIR}/godot-cpp-prebuilt/"* godot-cpp/
+          else
+            cp -r "${TEMP_DIR}/"* godot-cpp/
+          fi
+          rm -rf "${TEMP_DIR}" godot-cpp-prebuilt.zip
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          echo "set man-db/auto-update false" | sudo debconf-communicate
+          sudo dpkg-reconfigure man-db
+          sudo apt-get update
+          sudo apt-get install -y build-essential scons
+
+      - name: Setup SCons cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.scons-cache/
+          key: ${{ runner.os }}-scons-${{ hashFiles('**/*.cpp', '**/*.hpp', '**/*.h') }}
+          restore-keys: |
+            ${{ runner.os }}-scons-
+
+      - name: Build GDExtension (Release)
+        env:
+          SCONS_CACHE_DIR: ${{ github.workspace }}/.scons-cache/
+        run: |
+          scons platform=linux target=template_release -j$(nproc)
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libretrohost-linux-x86_64
+          path: demo/bin/LibRetroHost/lib/Linux-x86_64/
+          retention-days: 7
