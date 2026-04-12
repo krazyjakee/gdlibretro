@@ -9,3 +9,5 @@ vicerc*
 !dosbox_pure_libretro.dll
 .cache/godot-cpp-prebuilt-godot-4.5-stable.zip
 .sconsign.dblite
+*.dylib
+*.DS_Store

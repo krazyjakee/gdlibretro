@@ -22,7 +22,7 @@ GDLibretro allows you to load and run libretro cores (the same cores used by Ret
 
 ```bash
 # Clone with submodules
-git clone --recursive https://github.com/your-repo/gdlibretro.git
+git clone --recursive https://github.com/krazyjakee/gdlibretro.git
 cd gdlibretro
 
 # Build for your platform
