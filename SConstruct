@@ -170,7 +170,8 @@ else:
 if is_windows:
     # Windows system libraries
     env.Append(LIBS=['kernel32', 'user32', 'gdi32', 'winspool', 'comdlg32', 'advapi32',
-                     'shell32', 'ole32', 'oleaut32', 'uuid', 'odbc32', 'odbccp32'])
+                     'shell32', 'ole32', 'oleaut32', 'uuid', 'odbc32', 'odbccp32',
+                     'pthread'])
 elif platform == 'linux':
     env.Append(LIBS=['pthread', 'dl'])
 elif platform == 'macos':
