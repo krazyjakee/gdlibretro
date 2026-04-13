@@ -11,3 +11,4 @@ vicerc*
 .sconsign.dblite
 *.dylib
 *.DS_Store
+*.tmp

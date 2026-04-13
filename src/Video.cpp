@@ -7,8 +7,9 @@ void RetroHost::core_video_init( const struct retro_game_geometry *geometry )
     godot::UtilityFunctions::print( "[RetroHost] Video init ", geometry->base_width, " x ",
                                     geometry->base_height );
     this->frame_buffer = godot::Image::create( geometry->base_width, geometry->base_height, false,
-                                               this->pixel_format );
+                                               godot::Image::FORMAT_RGBA8 );
 }
+
 void RetroHost::core_video_refresh( const void *data, unsigned width, unsigned height,
                                     size_t pitch )
 {
@@ -23,7 +24,7 @@ void RetroHost::core_video_refresh( const void *data, unsigned width, unsigned h
         godot::UtilityFunctions::print( "[RetroHost] Resizing frame buffer to ", width, "x",
                                         height );
         auto created_frame_buffer =
-            godot::Image::create( width, height, false, frame_buffer->get_format() );
+            godot::Image::create( width, height, false, godot::Image::FORMAT_RGBA8 );
         if ( created_frame_buffer.is_null() || !created_frame_buffer.is_valid() )
         {
             godot::UtilityFunctions::printerr( "[RetroHost] Failed to recreate frame buffer" );
@@ -32,46 +33,84 @@ void RetroHost::core_video_refresh( const void *data, unsigned width, unsigned h
         frame_buffer = created_frame_buffer;
     }
 
-    unsigned buffer_size;
-    switch ( frame_buffer->get_format() )
+    unsigned dst_size = width * height * 4;
+    if ( (unsigned)video_intermediary_buffer.size() != dst_size )
     {
-        case godot::Image::FORMAT_RGB565:
-            buffer_size = width * height * 2;
-            break;
-        case godot::Image::FORMAT_RGBA8:
-        {
-            buffer_size = width * height * 4;
+        video_intermediary_buffer.resize( dst_size );
+    }
+    uint8_t *dst = video_intermediary_buffer.ptrw();
+    const uint8_t *src = (const uint8_t *)data;
 
-// Yes compiler, i know this is dumb, just let me do my thing.
-#pragma warning( push )
-#pragma warning( disable : 4244 )
-            // Retroarch uses XRGB8888, X is the A, so it looks like ARGB8888, but Godot only
-            // supports RGBA8888 We need to swap the first and last bytes, so alpha is the last byte
-            // to get accurate color
-            uint32_t *data32 = (uint32_t *)data;
-            for ( unsigned i = 0; i < width * height; i++ )
+    switch ( this->core_pixel_format )
+    {
+        case RETRO_PIXEL_FORMAT_RGB565:
+        {
+            for ( unsigned y = 0; y < height; y++ )
             {
-                uint32_t pixel = data32[i];
-                uint8_t alpha = ( pixel & 0xFF000000 ) >> 24;
-                uint8_t red = ( pixel & 0x00FF0000 ) >> 16;
-                uint8_t green = ( pixel & 0x0000FF00 ) >> 8;
-                uint8_t blue = ( pixel & 0x000000FF );
-                data32[i] = ( alpha << 24 ) | ( blue << 16 ) | ( green << 8 ) | red;
+                const uint16_t *row = (const uint16_t *)( src + y * pitch );
+                uint8_t *dst_row = dst + y * width * 4;
+                for ( unsigned x = 0; x < width; x++ )
+                {
+                    uint16_t pixel = row[x];
+                    uint8_t r = ( pixel >> 11 ) & 0x1F;
+                    uint8_t g = ( pixel >> 5 ) & 0x3F;
+                    uint8_t b = pixel & 0x1F;
+                    dst_row[x * 4 + 0] = ( r << 3 ) | ( r >> 2 );
+                    dst_row[x * 4 + 1] = ( g << 2 ) | ( g >> 4 );
+                    dst_row[x * 4 + 2] = ( b << 3 ) | ( b >> 2 );
+                    dst_row[x * 4 + 3] = 0xFF;
+                }
             }
-#pragma warning( pop )
         }
         break;
+
+        case RETRO_PIXEL_FORMAT_0RGB1555:
+        {
+            for ( unsigned y = 0; y < height; y++ )
+            {
+                const uint16_t *row = (const uint16_t *)( src + y * pitch );
+                uint8_t *dst_row = dst + y * width * 4;
+                for ( unsigned x = 0; x < width; x++ )
+                {
+                    uint16_t pixel = row[x];
+                    uint8_t r = ( pixel >> 10 ) & 0x1F;
+                    uint8_t g = ( pixel >> 5 ) & 0x1F;
+                    uint8_t b = pixel & 0x1F;
+                    dst_row[x * 4 + 0] = ( r << 3 ) | ( r >> 2 );
+                    dst_row[x * 4 + 1] = ( g << 3 ) | ( g >> 2 );
+                    dst_row[x * 4 + 2] = ( b << 3 ) | ( b >> 2 );
+                    dst_row[x * 4 + 3] = 0xFF;
+                }
+            }
+        }
+        break;
+
+        case RETRO_PIXEL_FORMAT_XRGB8888:
+        {
+            for ( unsigned y = 0; y < height; y++ )
+            {
+                const uint32_t *row = (const uint32_t *)( src + y * pitch );
+                uint8_t *dst_row = dst + y * width * 4;
+                for ( unsigned x = 0; x < width; x++ )
+                {
+                    uint32_t pixel = row[x];
+                    dst_row[x * 4 + 0] = ( pixel >> 16 ) & 0xFF;
+                    dst_row[x * 4 + 1] = ( pixel >> 8 ) & 0xFF;
+                    dst_row[x * 4 + 2] = pixel & 0xFF;
+                    dst_row[x * 4 + 3] = 0xFF;
+                }
+            }
+        }
+        break;
+
         default:
             godot::UtilityFunctions::printerr( "[RetroHost] Unhandled pixel format: ",
-                                               frame_buffer->get_format() );
+                                               this->core_pixel_format );
             return;
     }
 
-    godot::PackedByteArray intermediary_buffer;
-    intermediary_buffer.resize( buffer_size );
-    memcpy( (void *)intermediary_buffer.ptr(), data, buffer_size );
-
-    frame_buffer->set_data( width, height, false, frame_buffer->get_format(), intermediary_buffer );
+    frame_buffer->set_data( width, height, false, godot::Image::FORMAT_RGBA8,
+                            video_intermediary_buffer );
 }
 
 bool RetroHost::core_video_set_pixel_format( unsigned format )
@@ -80,16 +119,15 @@ bool RetroHost::core_video_set_pixel_format( unsigned format )
     {
         case RETRO_PIXEL_FORMAT_0RGB1555:
             godot::UtilityFunctions::print( "[RetroHost] Pixel format: 0RGB1555" );
-            this->pixel_format = godot::Image::Format::FORMAT_RGB565;
+            this->core_pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
             return true;
         case RETRO_PIXEL_FORMAT_XRGB8888:
             godot::UtilityFunctions::print( "[RetroHost] Pixel format: XRGB8888" );
-            // TODO: Should actually be ARGB8888, but that's not supported by Godot
-            this->pixel_format = godot::Image::Format::FORMAT_RGBA8;
+            this->core_pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
             return true;
         case RETRO_PIXEL_FORMAT_RGB565:
             godot::UtilityFunctions::print( "[RetroHost] Pixel format: RGB565" );
-            this->pixel_format = godot::Image::Format::FORMAT_RGB565;
+            this->core_pixel_format = RETRO_PIXEL_FORMAT_RGB565;
             return true;
         default:
             return false;

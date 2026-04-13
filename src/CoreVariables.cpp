@@ -27,6 +27,9 @@ void RetroHost::load_core_variables() {
 }
 
 void RetroHost::save_core_variables() {
+    if ( !this->variables_dirty )
+        return;
+
     godot::String path = get_variable_file_path(core_name);
     auto file = godot::FileAccess::open(path, godot::FileAccess::ModeFlags::WRITE_READ);
     if(godot::FileAccess::get_open_error() != godot::Error::OK) {
@@ -38,4 +41,5 @@ void RetroHost::save_core_variables() {
 
     file->store_string(YAML::Dump(this->core_variables).c_str());
     file->close();
+    this->variables_dirty = false;
 }

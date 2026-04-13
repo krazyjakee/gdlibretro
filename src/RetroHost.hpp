@@ -6,9 +6,18 @@
 #include <dlfcn.h>
 #endif
 #include <filesystem>
+#include <map>
+#include <string>
+#include <vector>
+#include "godot_cpp/classes/audio_stream_generator.hpp"
+#include "godot_cpp/classes/audio_stream_generator_playback.hpp"
+#include "godot_cpp/classes/audio_stream_player.hpp"
 #include "godot_cpp/classes/image.hpp"
 #include "godot_cpp/classes/input_event.hpp"
+#include "godot_cpp/variant/packed_vector2_array.hpp"
 #include "godot_cpp/classes/object.hpp"
+#include "godot_cpp/variant/dictionary.hpp"
+#include "godot_cpp/variant/packed_string_array.hpp"
 #include "libretro.h"
 #include "yaml-cpp/yaml.h"
 
@@ -24,25 +33,41 @@ public:
     ~RetroHost();
 
     bool load_core( godot::String path );
+    bool load_game( godot::String path );
     void unload_core();
+    godot::Dictionary get_core_info( godot::String name );
     void run();
     void forwarded_input( const godot::Ref<godot::InputEvent> &event );
+
+    godot::Dictionary get_core_variables();
+    void set_core_variable( godot::String key, godot::String value );
+    godot::PackedStringArray get_core_variable_options( godot::String key );
 
 private:
     static RetroHost *singleton;
 
     godot::Ref<godot::Image> frame_buffer;
+    godot::PackedByteArray video_intermediary_buffer;
     godot::Ref<godot::Image> get_frame_buffer()
     {
         return frame_buffer;
     }
 
     // We're passing character arrays to the core, we don't know the required lifetime, so we're
-    // freeing everything on unload
-    std::vector<char *> please_free_me_str;
+    // freeing everything on unload. Keyed by variable name to deduplicate repeated requests.
+    std::map<std::string, char *> variable_string_cache;
+
+    // Cached cwd string for returning to cores (avoids dangling pointer from temporaries)
+    std::string cwd_path_cache;
 
     YAML::Node core_variables;
     godot::String core_name;
+    bool game_loaded = false;
+    bool variables_dirty = false;
+
+    // Stores variable descriptions and possible options from SET_VARIABLES
+    // key -> { description, [option1, option2, ...] }
+    std::map<std::string, std::vector<std::string>> variable_options;
 
     void load_core_variables();
     void save_core_variables();
@@ -53,10 +78,15 @@ private:
     void core_video_init( const struct retro_game_geometry *geometry );
     void core_video_refresh( const void *data, unsigned width, unsigned height, size_t pitch );
     bool core_video_set_pixel_format( unsigned format );
-    godot::Image::Format pixel_format;
+    unsigned core_pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 
     void core_input_poll( void );
     int16_t core_input_state( unsigned port, unsigned device, unsigned index, unsigned id );
+
+    godot::AudioStreamPlayer *audio_player = nullptr;
+    godot::Ref<godot::AudioStreamGeneratorPlayback> audio_playback;
+    godot::PackedVector2Array audio_batch_buffer;
+    double audio_sample_rate = 0.0;
 
     void core_audio_init( retro_system_av_info av );
     void core_audio_sample( int16_t left, int16_t right );
@@ -172,7 +202,7 @@ private:
         // void *retro_get_memory_data(unsigned id);
         // size_t retro_get_memory_size(unsigned id);
 
-        retro_keyboard_event_t retro_keyboard_event_callback;
+        retro_keyboard_event_t retro_keyboard_event_callback = nullptr;
     } core;
 
 protected:

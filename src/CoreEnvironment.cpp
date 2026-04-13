@@ -30,14 +30,25 @@ bool RetroHost::get_variable( retro_variable *variable )
         return false;
     }
 
-    // var_value goes out of scope after this function returns, so we need to copy it
+    std::string cache_key = variable->key;
+    auto it = this->variable_string_cache.find( cache_key );
+
+    // Only allocate if the key is new or the value changed
+    if ( it != this->variable_string_cache.end() )
+    {
+        if ( strcmp( it->second, var_value.c_str() ) == 0 )
+        {
+            variable->value = it->second;
+            return true;
+        }
+        delete[] it->second;
+    }
+
     const std::string::size_type size = var_value.size();
     char *buffer = new char[size + 1];
-    memcpy(buffer, var_value.c_str(), size + 1);
+    memcpy( buffer, var_value.c_str(), size + 1 );
 
-    // No leaks here please thank you
-    this->please_free_me_str.push_back(buffer);
-
+    this->variable_string_cache[cache_key] = buffer;
     variable->value = buffer;
     return true;
 }
@@ -103,12 +114,16 @@ bool RetroHost::core_environment( unsigned command, void *data )
             auto variables = (const struct retro_variable *)data;
             while ( variables->key )
             {
+                std::string value = variables->value;
+                // Get the possible values from the value string and trim the leading space
+                auto possible_values_str = split(value, ";")[1].erase(0, 1);
+                // Split the possible values into a vector
+                auto possible_values = split(possible_values_str, "|");
+
+                // Store options for later retrieval via get_core_variable_options()
+                this->variable_options[variables->key] = possible_values;
+
                 if(!this->core_variables[variables->key].IsDefined()) {
-                    std::string value = variables->value;
-                    // Get the possible values from the value string and trim the leading space
-                    auto possible_values_str = split(value, ";")[1].erase(0, 1);
-                    // Split the possible values into a vector
-                    auto possible_values = split(possible_values_str, "|");
                     // Set the value to the first possible value
                     this->core_variables[variables->key] = possible_values[0];
 
@@ -121,10 +136,9 @@ bool RetroHost::core_environment( unsigned command, void *data )
 
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
         {
-            // Just say no variable was updated
-            // TODO: Actually do something
             bool *b = (bool *)data;
-            *b = false;
+            *b = this->variables_dirty;
+            this->variables_dirty = false;
         }
         break;
 
@@ -262,7 +276,8 @@ bool RetroHost::core_environment( unsigned command, void *data )
         case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
         {
             godot::UtilityFunctions::print( "[RetroHost] Core requested path" );
-            *(const char **)data = this->cwd.trim_suffix( "/" ).utf8().get_data();
+            this->cwd_path_cache = this->cwd.trim_suffix( "/" ).utf8().get_data();
+            *(const char **)data = this->cwd_path_cache.c_str();
             return true;
         }
 
@@ -282,11 +297,7 @@ bool RetroHost::core_environment( unsigned command, void *data )
         }
 
         default:
-        {
-            godot::UtilityFunctions::print( "[RetroHost] Core environment command " +
-                                            godot::String::num( command ) + " not implemented." );
             return false;
-        }
     }
 
     return true;
