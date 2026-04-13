@@ -95,13 +95,105 @@ Cores are extracted to `libretro-cores/`.
 
 **Requirements**: `7z` (p7zip-full) and `curl` or `wget`.
 
-## Using a Core
+## RetroHost API
 
-Place your libretro core in `libretro-cores/`
+GDLibretro exposes a `RetroHost` singleton that you can call from any GDScript. Place your libretro core libraries in `libretro-cores/`.
+
+### Core Lifecycle
 
 ```gdscript
 # Load a core by name (without file extension)
-RetroHost.load_core("your_core_libretro")
+RetroHost.load_core("genesis_plus_gx_libretro")
+
+# Load a ROM/game file
+RetroHost.load_game("/path/to/rom.md")
+
+# Run one frame — call this every frame in _process()
+RetroHost.run()
+
+# Unload the current core and game
+RetroHost.unload_core()
+```
+
+### Video
+
+```gdscript
+# Get the current frame as a Godot Image (returns null if no frame is ready)
+var frame: Image = RetroHost.get_frame_buffer()
+
+# Display it on a TextureRect
+if frame:
+    my_texture_rect.texture = ImageTexture.create_from_image(frame)
+```
+
+### Audio
+
+Audio playback is automatic — when a game is loaded, RetroHost creates an internal `AudioStreamPlayer` and pushes samples from the core.
+
+To use your own audio node instead (e.g. `AudioStreamPlayer3D` for spatial audio), call `set_audio_node` before loading a game:
+
+```gdscript
+@onready var audio: AudioStreamPlayer3D = $AudioStreamPlayer3D
+
+func _ready():
+    RetroHost.set_audio_node(audio)
+    RetroHost.load_core("genesis_plus_gx_libretro")
+    RetroHost.load_game("res://roms/sonic.md")
+```
+
+`set_audio_node` accepts any `AudioStreamPlayer`, `AudioStreamPlayer2D`, or `AudioStreamPlayer3D`. RetroHost will assign an `AudioStreamGenerator` stream and manage playback automatically.
+
+### Input
+
+```gdscript
+# Forward Godot input events to the core (call from _input)
+func _input(event):
+    RetroHost.forward_input(event)
+```
+
+Keyboard events are mapped to a default joypad layout (WASD + arrow keys for D-pad, Z/X for buttons, etc.).
+
+### Core Info
+
+```gdscript
+# Get metadata about a core without fully loading it
+var info: Dictionary = RetroHost.get_core_info("genesis_plus_gx_libretro")
+# Returns: { "library_name": "Genesis Plus GX", "library_version": "1.7.4",
+#             "valid_extensions": "mdx|md|smd|gen|bin|...", "need_fullpath": false }
+```
+
+### Core Variables (Settings)
+
+```gdscript
+# Get all current core variables as { key: current_value }
+var variables: Dictionary = RetroHost.get_core_variables()
+
+# Get the list of valid options for a variable
+var options: PackedStringArray = RetroHost.get_core_variable_options("genesis_plus_gx_bram")
+
+# Set a core variable
+RetroHost.set_core_variable("genesis_plus_gx_bram", "per game")
+```
+
+### Minimal Example
+
+```gdscript
+extends Node
+
+@onready var display: TextureRect = $TextureRect
+
+func _ready():
+    RetroHost.load_core("genesis_plus_gx_libretro")
+    RetroHost.load_game("res://roms/sonic.md")
+
+func _process(_delta):
+    RetroHost.run()
+    var frame = RetroHost.get_frame_buffer()
+    if frame:
+        display.texture = ImageTexture.create_from_image(frame)
+
+func _input(event):
+    RetroHost.forward_input(event)
 ```
 
 ## Project Structure

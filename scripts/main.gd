@@ -2,15 +2,19 @@ extends VBoxContainer
 
 @onready var core_selector: OptionButton = %CoreSelector
 @onready var load_game_button: Button = %LoadGameButton
+@onready var load_last_button: Button = %LoadLastButton
 @onready var settings_button: Button = %SettingsButton
 @onready var game_display: TextureRect = %GameDisplay
 @onready var settings_panel: VBoxContainer = %SettingsPanel
 @onready var settings_vbox: VBoxContainer = %SettingsVBox
 @onready var shader_selector: OptionButton = %ShaderSelector
+@onready var audio_player: AudioStreamPlayer = %AudioStreamPlayer
 @onready var file_dialog: FileDialog = %FileDialog
 
 var crt_shader: Shader = preload("res://assets/shaders/crt.gdshader")
 var lcd_shader: Shader = preload("res://assets/shaders/lcd.gdshader")
+
+const LAST_ROM_PATH := "user://last_rom.txt"
 
 var core_loaded := false
 var core_names: Array[String] = []
@@ -23,15 +27,20 @@ var manual_core_override := false
 var _scan_thread: Thread
 
 func _ready():
+	RetroHost.set_audio_node(audio_player)
 	_scan_cores()
 	core_selector.item_selected.connect(_on_core_selected)
 	load_game_button.pressed.connect(_on_load_game_pressed)
+	load_last_button.pressed.connect(_on_load_last_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	file_dialog.file_selected.connect(_on_file_selected)
 	shader_selector.item_selected.connect(_on_shader_selected)
 	settings_panel.visible = false
 	# Enable Load Game from the start for ROM-first workflow
 	load_game_button.disabled = false
+	# Enable Load Last if a previous ROM path is saved
+	var last_rom := _load_last_rom()
+	load_last_button.disabled = last_rom.is_empty()
 
 func _scan_cores():
 	var cores_path := "res://libretro-cores/"
@@ -138,6 +147,30 @@ func _exit_tree():
 func _on_load_game_pressed():
 	file_dialog.popup_centered_ratio(0.7)
 
+func _on_load_last_pressed():
+	var path := _load_last_rom()
+	if path.is_empty() or not FileAccess.file_exists(path):
+		printerr("[main] Last ROM no longer exists: %s" % path)
+		load_last_button.disabled = true
+		return
+	_on_file_selected(path)
+
+func _save_last_rom(path: String):
+	var file := FileAccess.open(LAST_ROM_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(path)
+		file.close()
+
+func _load_last_rom() -> String:
+	if not FileAccess.file_exists(LAST_ROM_PATH):
+		return ""
+	var file := FileAccess.open(LAST_ROM_PATH, FileAccess.READ)
+	if not file:
+		return ""
+	var path := file.get_as_text().strip_edges()
+	file.close()
+	return path
+
 func _on_settings_pressed():
 	settings_panel.visible = not settings_panel.visible
 
@@ -162,6 +195,8 @@ func _on_file_selected(path: String):
 
 	if core_loaded:
 		RetroHost.load_game(path)
+		_save_last_rom(path)
+		load_last_button.disabled = false
 		_release_ui_focus()
 
 ## Resolve which core to use for a ROM file.

@@ -1,8 +1,9 @@
+#include "CoreEnvironment.hpp"
 #include "RetroHost.hpp"
 #include "godot_cpp/variant/utility_functions.hpp"
 #include <cstdarg>
 
-void core_log( enum retro_log_level level, const char *fmt, ... )
+static void core_log( enum retro_log_level level, const char *fmt, ... )
 {
     char buffer[4096] = { 0 };
     static const char *levelstr[] = { "DEBUG", "INFO", "WARN", "ERROR" };
@@ -16,61 +17,7 @@ void core_log( enum retro_log_level level, const char *fmt, ... )
                                     godot::String( levelstr[level - 1] ) + "] " + buffer );
 }
 
-bool RetroHost::get_variable( retro_variable *variable )
-{
-    if ( !this->core_variables[variable->key].IsDefined() )
-    {
-        godot::UtilityFunctions::printerr( "[RetroHost] Core variable ", variable->key, " not defined" );
-        return false;
-    }
-
-    auto var_value = core_variables[variable->key].as<std::string>();
-    if(var_value.empty()) {
-        godot::UtilityFunctions::printerr( "[RetroHost] Core variable ", variable->key, " was empty ", var_value.c_str() );
-        return false;
-    }
-
-    std::string cache_key = variable->key;
-    auto it = this->variable_string_cache.find( cache_key );
-
-    // Only allocate if the key is new or the value changed
-    if ( it != this->variable_string_cache.end() )
-    {
-        if ( strcmp( it->second, var_value.c_str() ) == 0 )
-        {
-            variable->value = it->second;
-            return true;
-        }
-        delete[] it->second;
-    }
-
-    const std::string::size_type size = var_value.size();
-    char *buffer = new char[size + 1];
-    memcpy( buffer, var_value.c_str(), size + 1 );
-
-    this->variable_string_cache[cache_key] = buffer;
-    variable->value = buffer;
-    return true;
-}
-
-std::vector<std::string> split( std::string s, std::string delimiter )
-{
-    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
-    std::string token;
-    std::vector<std::string> res;
-
-    while ( ( pos_end = s.find( delimiter, pos_start ) ) != std::string::npos )
-    {
-        token = s.substr( pos_start, pos_end - pos_start );
-        pos_start = pos_end + delim_len;
-        res.push_back( token );
-    }
-
-    res.push_back( s.substr( pos_start ) );
-    return res;
-}
-
-bool RetroHost::core_environment( unsigned command, void *data )
+bool core_environment( RetroHost &host, unsigned command, void *data )
 {
     switch ( command )
     {
@@ -93,118 +40,53 @@ bool RetroHost::core_environment( unsigned command, void *data )
         case RETRO_ENVIRONMENT_GET_VARIABLE:
         {
             auto var = (retro_variable *)data;
-            auto result = this->get_variable( var );
-            // if ( result )
-            // {
-            //     godot::UtilityFunctions::print( "[RetroHost] Core variable ",
-            //                                     var->key, " set to ",
-            //                                     var->value );
-            // }
-            // else
-            // {
-            //     godot::UtilityFunctions::print( "[RetroHost] Core variable set request ",
-            //                                     var->key, " not handled" );
-            // }
-            return result;
+            return host.variables.get_variable( var );
         }
         break;
 
         case RETRO_ENVIRONMENT_SET_VARIABLES:
         {
             auto variables = (const struct retro_variable *)data;
-            while ( variables->key )
-            {
-                std::string value = variables->value;
-                // Get the possible values from the value string and trim the leading space
-                auto possible_values_str = split(value, ";")[1].erase(0, 1);
-                // Split the possible values into a vector
-                auto possible_values = split(possible_values_str, "|");
-
-                // Store options for later retrieval via get_core_variable_options()
-                this->variable_options[variables->key] = possible_values;
-
-                if(!this->core_variables[variables->key].IsDefined()) {
-                    // Set the value to the first possible value
-                    this->core_variables[variables->key] = possible_values[0];
-
-                    godot::UtilityFunctions::print( "[RetroHost] Core variable ", variables->key, " was not present in the config file, now set to the first possible value: ", possible_values[0].c_str() );
-                }
-                variables++;
-            }
+            host.variables.set_variables( variables );
         }
         break;
 
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
         {
             bool *b = (bool *)data;
-            *b = this->variables_dirty;
-            this->variables_dirty = false;
+            *b = host.variables.get_variable_update();
         }
         break;
 
-        // TODO: Implement (DOS)
-        // case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: {
-        //     // struct retro_perf_callback
-        //     auto callback = (struct retro_perf_callback *)data;
-        // }
-
-
-        // TODO: Implement (DOS)
-        // case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE: {
-        //     auto callback = (struct retro_disk_control_callback *)data;
-        //     godot::UtilityFunctions::print( "[RetroHost] disk control interface set" );
-        // }
-        // break;
-
-        // TODO: Implement (DOS)
-        // case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE: {
-
-        // }
-
-        // TODO: Implement (DOS)
-        // case RETRO_ENVIRONMENT_SET_VARIABLE: {
-
-        // }
-        // break;
-
-        // TODO: Implement (DOS) and understand wtf achievements are supposed to be
-        // case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS: {
-
-        // }
-        // break;
-
-        // TODO: Implement (DOS)
-        // case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK: {
-
-        // }
-        // break;
-
-        // TODO: Implement (DOS) not really important
-        // case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: {
-
-        // }
-
-        case RETRO_ENVIRONMENT_GET_VFS_INTERFACE: {
+        case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+        {
             auto vfs_interface = (struct retro_vfs_interface_info *)data;
             godot::UtilityFunctions::print( "[RetroHost] Core requested VFS interface" );
-            if(vfs_interface->required_interface_version > this->vfs.supported_interface_version) {
-                godot::UtilityFunctions::printerr( "[RetroHost] Core requested VFS interface v", vfs_interface->required_interface_version, " we only support up to v", this->vfs.supported_interface_version );
+            if ( vfs_interface->required_interface_version >
+                 host.vfs.supported_interface_version )
+            {
+                godot::UtilityFunctions::printerr(
+                    "[RetroHost] Core requested VFS interface v",
+                    vfs_interface->required_interface_version, " we only support up to v",
+                    host.vfs.supported_interface_version );
                 return false;
             }
-            godot::UtilityFunctions::print( "[RetroHost] Core requested VFS interface v", vfs_interface->required_interface_version);
-            vfs_interface->iface = &this->vfs.vfs_interface;
+            godot::UtilityFunctions::print( "[RetroHost] Core requested VFS interface v",
+                                            vfs_interface->required_interface_version );
+            vfs_interface->iface = &host.vfs.vfs_interface;
             return true;
         }
         break;
 
-        case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION: {
+        case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION:
+        {
             unsigned *version = (unsigned *)data;
-            // TODO: Support higher versions
             *version = 0;
             return false;
         }
 
-        case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION: {
+        case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION:
+        {
             unsigned *version = (unsigned *)data;
             *version = 0;
             return false;
@@ -221,48 +103,56 @@ bool RetroHost::core_environment( unsigned command, void *data )
             }
 
             godot::UtilityFunctions::print( "[RetroHost] Core setting pixel format" );
-            return this->core_video_set_pixel_format( *fmt );
+            return host.video.set_pixel_format( *fmt );
         }
         break;
 
-        case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: {
-            // const struct retro_keyboard_callback
+        case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
+        {
             auto callback = (const struct retro_keyboard_callback *)data;
-            this->core.retro_keyboard_event_callback = callback->callback;
+            host.core.retro_keyboard_event_callback = callback->callback;
             godot::UtilityFunctions::print( "[RetroHost] keyboard callback set" );
         }
         break;
 
-        case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS: {
-            if(!data)
+        case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
+        {
+            if ( !data )
                 return false;
-            // TODO: Support bitmasks
             bool *b = (bool *)data;
             *b = false;
         }
         break;
 
-        case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
-            const struct retro_input_descriptor *desc = (const struct retro_input_descriptor *)data;
-            while (desc->description) {
-                godot::UtilityFunctions::print("[RetroHost] Core input descriptor: ", desc->description);
+        case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+        {
+            const struct retro_input_descriptor *desc =
+                (const struct retro_input_descriptor *)data;
+            while ( desc->description )
+            {
+                godot::UtilityFunctions::print( "[RetroHost] Core input descriptor: ",
+                                                desc->description );
                 desc++;
             }
         }
         break;
 
-        case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME: {
+        case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
+        {
             bool *b = (bool *)data;
-            if(*b) {
-                godot::UtilityFunctions::print("[RetroHost] Core supports no game");
-            } else {
-                godot::UtilityFunctions::print("[RetroHost] Core does not support no game");
+            if ( *b )
+            {
+                godot::UtilityFunctions::print( "[RetroHost] Core supports no game" );
+            }
+            else
+            {
+                godot::UtilityFunctions::print( "[RetroHost] Core does not support no game" );
             }
         }
         break;
 
-        case RETRO_ENVIRONMENT_GET_THROTTLE_STATE: {
-            // retro_throttle_state
+        case RETRO_ENVIRONMENT_GET_THROTTLE_STATE:
+        {
             auto throttle_state = (struct retro_throttle_state *)data;
             throttle_state->mode = RETRO_THROTTLE_UNBLOCKED;
             throttle_state->rate = 0;
@@ -276,13 +166,14 @@ bool RetroHost::core_environment( unsigned command, void *data )
         case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
         {
             godot::UtilityFunctions::print( "[RetroHost] Core requested path" );
-            this->cwd_path_cache = this->cwd.trim_suffix( "/" ).utf8().get_data();
-            *(const char **)data = this->cwd_path_cache.c_str();
+            host.cwd_path_cache = host.cwd.trim_suffix( "/" ).utf8().get_data();
+            *(const char **)data = host.cwd_path_cache.c_str();
             return true;
         }
 
-        case RETRO_ENVIRONMENT_GET_FASTFORWARDING: {
-            if(!data)
+        case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
+        {
+            if ( !data )
                 return false;
             bool *b = (bool *)data;
             *b = false;
@@ -291,7 +182,6 @@ bool RetroHost::core_environment( unsigned command, void *data )
 
         case RETRO_ENVIRONMENT_SHUTDOWN:
         {
-            // TODO: Actually shut down the core
             godot::UtilityFunctions::print( "[RetroHost] Core shutdown requested" );
             break;
         }

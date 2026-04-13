@@ -198,11 +198,12 @@ print("==================================")
 src_files = [
     'src/RegisterExtension.cpp',
     'src/RetroHost.cpp',
+    'src/CoreLoader.cpp',
     'src/CoreEnvironment.cpp',
     'src/CoreVariables.cpp',
-    'src/Audio.cpp',
-    'src/Input.cpp',
-    'src/Video.cpp',
+    'src/AudioManager.cpp',
+    'src/VideoManager.cpp',
+    'src/InputManager.cpp',
     'src/VFS.cpp',
 ]
 

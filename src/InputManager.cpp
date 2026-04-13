@@ -1,10 +1,7 @@
-#include "RetroHost.hpp"
+#include "InputManager.hpp"
 #include "KeyboardMap.hpp"
 #include "godot_cpp/classes/input_event_key.hpp"
 #include "godot_cpp/variant/utility_functions.hpp"
-
-static bool keyboard_state[RETROK_LAST] = { false };
-static bool joypad_state[16] = { false };
 
 // Default keyboard-to-joypad mapping
 static int godotKeyToJoypadButton( godot::Key key )
@@ -40,12 +37,12 @@ static int godotKeyToJoypadButton( godot::Key key )
     }
 }
 
-void RetroHost::core_input_poll( void )
+void InputManager::poll()
 {
-    // godot::UtilityFunctions::print( "Input poll" );
+    // Input polling is handled by Godot's input system
 }
 
-int16_t RetroHost::core_input_state( unsigned port, unsigned device, unsigned index, unsigned id )
+int16_t InputManager::state( unsigned port, unsigned device, unsigned index, unsigned id )
 {
     if ( port != 0 )
         return 0;
@@ -69,7 +66,8 @@ int16_t RetroHost::core_input_state( unsigned port, unsigned device, unsigned in
     return 0;
 }
 
-void RetroHost::forwarded_input( const godot::Ref<godot::InputEvent> &event )
+void InputManager::forward_event( const godot::Ref<godot::InputEvent> &event,
+                                  retro_keyboard_event_t keyboard_callback )
 {
     if ( event->is_class( "InputEventKey" ) )
     {
@@ -95,7 +93,7 @@ void RetroHost::forwarded_input( const godot::Ref<godot::InputEvent> &event )
             return;
 
         // Forward keyboard event callback to core
-        if ( this->core.retro_keyboard_event_callback )
+        if ( keyboard_callback )
         {
             uint16_t modifiers =
                 ( RETROKMOD_ALT & ( key_event->is_alt_pressed() ? 0xFF : 0 ) ) |
@@ -103,7 +101,7 @@ void RetroHost::forwarded_input( const godot::Ref<godot::InputEvent> &event )
                 ( RETROKMOD_META & ( key_event->is_meta_pressed() ? 0xFF : 0 ) ) |
                 ( RETROKMOD_SHIFT & ( key_event->is_shift_pressed() ? 0xFF : 0 ) );
 
-            this->core.retro_keyboard_event_callback( pressed, retro_key, 0, modifiers );
+            keyboard_callback( pressed, retro_key, 0, modifiers );
         }
 
         keyboard_state[retro_key] = pressed;

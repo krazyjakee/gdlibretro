@@ -13,3 +13,5 @@ vicerc*
 *.DS_Store
 *.tmp
 .godot
+*.os
+libretro-cores/*
