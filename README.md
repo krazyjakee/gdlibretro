@@ -48,9 +48,9 @@ Options:
 ### Build Output
 
 Libraries are placed in:
-- Linux: `demo/bin/LibRetroHost/lib/Linux-x86_64/libLibRetroHost.so`
-- macOS: `demo/bin/LibRetroHost/lib/Darwin-Universal/libLibRetroHost.dylib`
-- Windows: `demo/bin/LibRetroHost/lib/Windows-AMD64/LibRetroHost.dll`
+- Linux: `addons/gdlibretro/lib/Linux-x86_64/gdlibretro.so`
+- macOS: `addons/gdlibretro/lib/Darwin-Universal/gdlibretro.dylib`
+- Windows: `addons/gdlibretro/lib/Windows-AMD64/gdlibretro.dll`
 
 ### Building Manually with SCons
 
@@ -91,33 +91,30 @@ Use `cores.sh` to download all RetroArch cores for your platform:
 ./cores.sh windows  # Download Windows cores
 ```
 
-Cores are extracted to `demo/libretro-cores/`.
+Cores are extracted to `libretro-cores/`.
 
 **Requirements**: `7z` (p7zip-full) and `curl` or `wget`.
 
 ## Using a Core
 
-1. Place your libretro core in `demo/libretro-cores/`
-2. Modify `demo/node_3d.gd` to load your core:
+Place your libretro core in `libretro-cores/`
 
 ```gdscript
 # Load a core by name (without file extension)
 RetroHost.load_core("your_core_libretro")
 ```
 
-3. Run the demo project in Godot
-
 ## Project Structure
 
 ```
 gdlibretro/
-├── src/                    # LibRetroHost source code
+├── src/                    # gdlibretro source code
 ├── godot-cpp/              # Godot C++ bindings (submodule)
 ├── yaml-cpp/               # YAML parsing library
 ├── libretro/               # Libretro API headers
-├── demo/                   # Godot demo project
-│   ├── bin/LibRetroHost/   # Compiled extension
-│   └── libretro-cores/     # Place cores here
+├── libretro-cores/         # Place cores here
+├── addons/                 # Godot demo project
+│   ├── gdlibretro/         # Compiled extension
 ├── build.sh                # Build script
 ├── test.sh                 # Test script
 ├── cores.sh                # Core downloader

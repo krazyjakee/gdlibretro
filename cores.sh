@@ -4,7 +4,7 @@ set -e
 
 PLATFORM="$1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CORES_DIR="$SCRIPT_DIR/demo/libretro-cores"
+CORES_DIR="$SCRIPT_DIR/libretro-cores"
 ARCHIVE_NAME="RetroArch_cores.7z"
 
 if [ -z "$PLATFORM" ]; then

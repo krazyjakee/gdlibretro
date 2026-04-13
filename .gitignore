@@ -12,3 +12,4 @@ vicerc*
 *.dylib
 *.DS_Store
 *.tmp
+.godot

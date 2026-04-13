@@ -22,7 +22,7 @@ build:
 
 # Move the generated files to the addons directory
 move_files:
-	find . -name "libLibRetroHost-d.*" -exec mv -v {} $(ADDONS_DIR)/ \;
+	find . -name "gdlibretro-d.*" -exec mv -v {} $(ADDONS_DIR)/ \;
 
 # Clean the build files
 clean:
@@ -31,5 +31,5 @@ clean:
 ARCH := $(shell uname -m)
 CORE_NAME := dosbox_pure
 get-core/apple:
-	cd demo/libretro-cores && \
+	cd libretro-cores && \
 	curl -L https://buildbot.libretro.com/nightly/apple/osx/${ARCH}/latest/${CORE_NAME}_libretro.dylib.zip | bsdtar -xvf -

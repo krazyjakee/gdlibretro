@@ -9,8 +9,8 @@ extends VBoxContainer
 @onready var shader_selector: OptionButton = %ShaderSelector
 @onready var file_dialog: FileDialog = %FileDialog
 
-var crt_shader: Shader = preload("res://shaders/crt.gdshader")
-var lcd_shader: Shader = preload("res://shaders/lcd.gdshader")
+var crt_shader: Shader = preload("res://assets/shaders/crt.gdshader")
+var lcd_shader: Shader = preload("res://assets/shaders/lcd.gdshader")
 
 var core_loaded := false
 var core_names: Array[String] = []

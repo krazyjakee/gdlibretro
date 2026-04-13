@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Demo"
-run/main_scene="res://main.tscn"
+config/name="GDLibRetro"
+run/main_scene="uid://bgfaymd274r0a"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"

@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-PROJECT_NAME="LibRetroHost"
+PROJECT_NAME="gdlibretro"
 
 echo -e "${BLUE}=== Testing GDLibretro Extension ===${NC}"
 
@@ -36,20 +36,20 @@ echo -e "${BLUE}Using Godot at: $(which $GODOT_CMD || echo ./godot)${NC}"
 FOUND_LIB=false
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    LIB_PATH="demo/bin/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so"
+    LIB_PATH="addons/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so"
     if [ -f "$LIB_PATH" ]; then
         FOUND_LIB=true
         echo -e "${GREEN}✓ Found Linux library: $LIB_PATH${NC}"
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    LIB_PATH="demo/bin/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib"
+    LIB_PATH="addons/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib"
     if [ -f "$LIB_PATH" ]; then
         FOUND_LIB=true
         echo -e "${GREEN}✓ Found macOS library: $LIB_PATH${NC}"
     fi
 elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    LIB_PATH_RELEASE="demo/bin/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}.dll"
-    LIB_PATH_DEBUG="demo/bin/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}-d.dll"
+    LIB_PATH_RELEASE="addons/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}.dll"
+    LIB_PATH_DEBUG="addons/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}-d.dll"
     if [ -f "$LIB_PATH_RELEASE" ] || [ -f "$LIB_PATH_DEBUG" ]; then
         FOUND_LIB=true
         echo -e "${GREEN}✓ Found Windows library${NC}"
@@ -63,14 +63,14 @@ if [ "$FOUND_LIB" = false ]; then
     echo -e "${YELLOW}Please run build.sh first to build the extension${NC}"
     echo ""
     echo "Expected library locations:"
-    echo "  Linux:   demo/bin/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so"
-    echo "  macOS:   demo/bin/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib"
-    echo "  Windows: demo/bin/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}.dll"
+    echo "  Linux:   addons/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so"
+    echo "  macOS:   addons/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib"
+    echo "  Windows: addons/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}.dll"
     exit 1
 fi
 
 # Check if the gdextension file exists
-GDEXT_FILE="demo/bin/${PROJECT_NAME}/${PROJECT_NAME}.gdextension"
+GDEXT_FILE="addons/${PROJECT_NAME}/${PROJECT_NAME}.gdextension"
 if [ ! -f "$GDEXT_FILE" ]; then
     echo -e "${YELLOW}Warning: .gdextension file not found at $GDEXT_FILE${NC}"
     echo -e "${YELLOW}The extension may not load correctly in Godot${NC}"
@@ -78,7 +78,6 @@ fi
 
 # Import the project (this will also validate the extension loads)
 echo -e "${YELLOW}Importing Godot project (this validates the extension)...${NC}"
-cd demo
 timeout 30s $GODOT_CMD --headless --quit 2>&1 | tee /tmp/godot_test_output.txt
 
 # Check if there were any errors in the output
@@ -91,9 +90,9 @@ else
 fi
 
 # Try to run the demo scene briefly to verify the extension works
-if [ -f "node_3d.tscn" ]; then
+if [ -f "main.tscn" ]; then
     echo -e "${YELLOW}Running demo scene for 5 seconds...${NC}"
-    timeout 5s $GODOT_CMD --headless node_3d.tscn 2>&1 | tee /tmp/godot_scene_output.txt || true
+    timeout 5s $GODOT_CMD --headless main.tscn 2>&1 | tee /tmp/godot_scene_output.txt || true
 
     if grep -qi "error" /tmp/godot_scene_output.txt; then
         echo -e "${YELLOW}⚠ Some errors detected during scene execution${NC}"
@@ -110,9 +109,9 @@ echo -e "${GREEN}=== All Tests Completed! ===${NC}"
 echo -e "${BLUE}The ${PROJECT_NAME} extension appears to be working correctly${NC}"
 echo ""
 echo -e "${YELLOW}Manual testing:${NC}"
-echo "1. Open the demo project in Godot: godot demo/project.godot"
+echo "1. Open the demo project in Godot: godot project.godot"
 echo "2. Run the demo scene to test libretro core loading"
-echo "3. Place libretro core files in demo/libretro-cores/"
+echo "3. Place libretro core files in libretro-cores/"
 
 # Clean up temp files
 rm -f /tmp/godot_test_output.txt /tmp/godot_scene_output.txt

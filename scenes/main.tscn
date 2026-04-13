@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bgfaymd274r0a"]
 
-[ext_resource type="Script" uid="uid://da3jyubtv3r0e" path="res://main.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://da3jyubtv3r0e" path="res://scripts/main.gd" id="1_script"]
 
 [node name="Main" type="VBoxContainer"]
 anchors_preset = 15
@@ -53,11 +53,13 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 0
 
 [node name="Libretro Settings" type="ScrollContainer" parent="HSplitContainer/SettingsPanel/SettingsTabContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+metadata/_tab_index = 0
 
 [node name="SettingsVBox" type="VBoxContainer" parent="HSplitContainer/SettingsPanel/SettingsTabContainer/Libretro Settings"]
 unique_name_in_owner = true
@@ -65,9 +67,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="GDLibretro Settings" type="ScrollContainer" parent="HSplitContainer/SettingsPanel/SettingsTabContainer"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+metadata/_tab_index = 1
 
 [node name="GDLibretroVBox" type="VBoxContainer" parent="HSplitContainer/SettingsPanel/SettingsTabContainer/GDLibretro Settings"]
 unique_name_in_owner = true
@@ -88,6 +92,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 item_count = 3
 popup/item_0/text = "None"
+popup/item_0/id = 0
 popup/item_1/text = "CRT"
 popup/item_1/id = 1
 popup/item_2/text = "LCD"

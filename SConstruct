@@ -5,7 +5,7 @@ import os
 import sys
 
 # Project configuration
-PROJECT_NAME = "LibRetroHost"
+PROJECT_NAME = "gdlibretro"
 
 # Resolve platform/target/arch from args (matches CI defaults)
 platform = ARGUMENTS.get('platform')
@@ -194,7 +194,7 @@ print("env['CC']:", env.get('CC'))
 print("env['CXX']:", env.get('CXX'))
 print("==================================")
 
-# Source files for LibRetroHost
+# Source files for gdlibretro
 src_files = [
     'src/RegisterExtension.cpp',
     'src/RetroHost.cpp',
@@ -246,13 +246,13 @@ src_files += yaml_cpp_files
 
 # Determine output directory based on platform
 if platform == 'windows':
-    output_dir = f'demo/bin/{PROJECT_NAME}/lib/Windows-AMD64'
+    output_dir = f'addons/{PROJECT_NAME}/lib/Windows-AMD64'
 elif platform == 'linux':
-    output_dir = f'demo/bin/{PROJECT_NAME}/lib/Linux-x86_64'
+    output_dir = f'addons/{PROJECT_NAME}/lib/Linux-x86_64'
 elif platform == 'macos':
-    output_dir = f'demo/bin/{PROJECT_NAME}/lib/Darwin-Universal'
+    output_dir = f'addons/{PROJECT_NAME}/lib/Darwin-Universal'
 else:
-    output_dir = f'demo/bin/{PROJECT_NAME}/lib/{platform}'
+    output_dir = f'addons/{PROJECT_NAME}/lib/{platform}'
 
 # Create output directory
 env.Execute(Mkdir(output_dir))
@@ -274,7 +274,7 @@ print("SHLIBSUFFIX:", env.get('SHLIBSUFFIX'))
 print("Output directory:", output_dir)
 print("Target shared lib will be created as:", env.get('SHLIBPREFIX') + PROJECT_NAME + env.get('SHLIBSUFFIX'))
 
-# Build the LibRetroHost shared library
+# Build the gdlibretro shared library
 library_target = os.path.join(output_dir, PROJECT_NAME)
 library = env.SharedLibrary(target=library_target, source=src_files)
 Default(library)

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build script for GDLibretro (Libretro GDExtension for Godot)
-# This script builds the LibRetroHost extension using SCons
+# This script builds the gdlibretro extension using SCons
 
 set -e
 
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 PLATFORM=""
 ARCH="x86_64"
 SCONS_FLAGS=""
-PROJECT_NAME="LibRetroHost"
+PROJECT_NAME="gdlibretro"
 
 # --- Helper Functions ---
 show_usage() {
@@ -264,11 +264,11 @@ main() {
     echo -e "${BLUE}Build type: ${BUILD_TARGET}${NC}"
 
     if [ "$PLATFORM" == "windows" ]; then
-        echo -e "${BLUE}Output: demo/bin/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}*.dll${NC}"
+        echo -e "${BLUE}Output: addons/${PROJECT_NAME}/lib/Windows-AMD64/${PROJECT_NAME}*.dll${NC}"
     elif [ "$PLATFORM" == "linux" ]; then
-        echo -e "${BLUE}Output: demo/bin/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so${NC}"
+        echo -e "${BLUE}Output: addons/${PROJECT_NAME}/lib/Linux-x86_64/lib${PROJECT_NAME}.so${NC}"
     elif [ "$PLATFORM" == "macos" ]; then
-        echo -e "${BLUE}Output: demo/bin/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib${NC}"
+        echo -e "${BLUE}Output: addons/${PROJECT_NAME}/lib/Darwin-Universal/lib${PROJECT_NAME}.dylib${NC}"
     fi
 
     show_cache_status

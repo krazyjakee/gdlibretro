@@ -71,8 +71,8 @@ jobs:
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libretrohost-linux-x86_64
-          path: demo/bin/LibRetroHost/lib/Linux-x86_64/
+          name: gdlibretro-linux-x86_64
+          path: addons/gdlibretro/lib/Linux-x86_64/
           retention-days: 7
 
   build-windows:
@@ -128,8 +128,8 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libretrohost-windows-x86_64
-          path: demo/bin/LibRetroHost/lib/Windows-AMD64/
+          name: gdlibretro-windows-x86_64
+          path: addons/gdlibretro/lib/Windows-AMD64/
           retention-days: 7
 
   build-macos:
@@ -187,18 +187,18 @@ jobs:
 
       - name: Create universal binary
         run: |
-          cd demo/bin/LibRetroHost/lib/Darwin-Universal
+          cd addons/gdlibretro/lib/Darwin-Universal
           # Find and combine the architecture-specific libraries
-          if [ -f "libLibRetroHost.x86_64.dylib" ] && [ -f "libLibRetroHost.arm64.dylib" ]; then
-            lipo -create libLibRetroHost.x86_64.dylib libLibRetroHost.arm64.dylib -output libLibRetroHost.dylib
-            rm libLibRetroHost.x86_64.dylib libLibRetroHost.arm64.dylib
+          if [ -f "gdlibretro.x86_64.dylib" ] && [ -f "gdlibretro.arm64.dylib" ]; then
+            lipo -create gdlibretro.x86_64.dylib gdlibretro.arm64.dylib -output gdlibretro.dylib
+            rm gdlibretro.x86_64.dylib gdlibretro.arm64.dylib
           fi
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libretrohost-macos-universal
-          path: demo/bin/LibRetroHost/lib/Darwin-Universal/
+          name: gdlibretro-macos-universal
+          path: addons/gdlibretro/lib/Darwin-Universal/
           retention-days: 7
 
   create-addon-package:
@@ -211,51 +211,51 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create package directory
-        run: mkdir -p package/addons/LibRetroHost/lib
+        run: mkdir -p package/addons/gdlibretro/lib
 
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: libretrohost-linux-x86_64
-          path: package/addons/LibRetroHost/lib/Linux-x86_64/
+          name: gdlibretro-linux-x86_64
+          path: package/addons/gdlibretro/lib/Linux-x86_64/
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: libretrohost-windows-x86_64
-          path: package/addons/LibRetroHost/lib/Windows-AMD64/
+          name: gdlibretro-windows-x86_64
+          path: package/addons/gdlibretro/lib/Windows-AMD64/
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: libretrohost-macos-universal
-          path: package/addons/LibRetroHost/lib/Darwin-Universal/
+          name: gdlibretro-macos-universal
+          path: package/addons/gdlibretro/lib/Darwin-Universal/
 
       - name: Copy gdextension file
         run: |
-          cp demo/bin/LibRetroHost/LibRetroHost.gdextension package/addons/LibRetroHost/
+          cp addons/gdlibretro/gdlibretro.gdextension package/addons/gdlibretro/
 
       - name: Copy README and LICENSE
         run: |
-          cp README.md package/addons/LibRetroHost/ || echo "README.md not found"
-          cp LICENSE package/addons/LibRetroHost/ || echo "LICENSE file not found"
+          cp README.md package/addons/gdlibretro/ || echo "README.md not found"
+          cp LICENSE package/addons/gdlibretro/ || echo "LICENSE file not found"
 
       - name: Generate SHA256 checksums
         run: |
-          cd package/addons/LibRetroHost/lib
+          cd package/addons/gdlibretro/lib
           find . -type f \( -name "*.so" -o -name "*.dll" -o -name "*.dylib" \) -exec sha256sum {} \; > checksums.txt
           cat checksums.txt
 
       - name: Create addon archive
         run: |
           cd package
-          zip -r ../libretrohost-addon.zip addons/
+          zip -r ../gdlibretro-addon.zip addons/
 
       - name: Upload addon package
         uses: actions/upload-artifact@v4
         with:
-          name: libretrohost-addon
-          path: libretrohost-addon.zip
+          name: gdlibretro-addon
+          path: gdlibretro-addon.zip
           retention-days: 30
 
   release:
@@ -268,11 +268,11 @@ jobs:
       - name: Download addon package
         uses: actions/download-artifact@v4
         with:
-          name: libretrohost-addon
+          name: gdlibretro-addon
           path: .
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: libretrohost-addon.zip
-          name: LibRetroHost ${{ github.ref_name }}
+          files: gdlibretro-addon.zip
+          name: gdlibretro ${{ github.ref_name }}
